@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Camera Selection</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        #container {
+            margin: 0 auto;
+            width: 650px;
+        }
+        #video, #canvas {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+<div id="container">
+    <h2>Choose your camera</h2>
+    <select id="cameraList"></select><br><br>
+    <video id="video" width="640" height="480" autoplay style="display:none;"></video>
+    <p id="resolution" style="display:none;"></p>
+</div>
+
+<script src="index.js"></script>
+</body>
+</html>
