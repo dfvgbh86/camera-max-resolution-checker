@@ -38,7 +38,6 @@ function setupCamera () {
             video: {
                 deviceId: { exact: cameraList.value },
                 width: { ideal: 4096 },
-                height: { ideal: 2160 },
                 aspectRatio: {
                     ideal: 1.7777777778
                 },
