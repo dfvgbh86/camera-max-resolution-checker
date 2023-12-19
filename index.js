@@ -1,21 +1,63 @@
 const videoElement = document.getElementById('video');
 const cameraList = document.getElementById('cameraList');
+const resolutionList = document.getElementById('resolutionList');
 const resolutionDisplay = document.getElementById('resolution');
 
 function getCameras() {
     navigator.mediaDevices.enumerateDevices()
         .then(devices => {
-            cameraList.innerHTML = ''; // Clear the list before adding new options
+            cameraList.innerHTML = '';
             const videoDevices = devices.filter(device => device.kind === 'videoinput');
-            videoDevices.forEach(device => {
+            videoDevices.forEach((device, index) => {
                 const option = document.createElement('option');
                 option.value = device.deviceId;
-                option.text = device.label || `Camera ${cameraList.length + 1}`;
+                option.text = device.label || `Camera ${index + 1}`;
                 cameraList.appendChild(option);
             });
-            setupCamera();
+
+            if (videoDevices.length > 0) {
+                startCameraWithDevice(videoDevices[0].deviceId);
+            }
         });
 }
+
+function getResolutionConstraints() {
+    const resolution = resolutionList.value;
+    switch (resolution) {
+        case 'fullhd':
+            return { width: { ideal: 1920 }, height: { ideal: 1080 }};
+        case 'hd':
+            return { width: { ideal: 1280 }, height: { ideal: 720 }};
+        case 'sd':
+            return { width: { ideal: 640 }, height: { ideal: 480 }};
+        default:
+            return { width: { ideal: 640 }, height: { ideal: 480 }};
+    }
+}
+
+function startCameraWithDevice(deviceId) {
+    const resolutionConstraints = getResolutionConstraints();
+    const constraints = {
+        video: {
+            ...resolutionConstraints,
+            deviceId: { exact: deviceId }
+        }
+    };
+
+    startCamera(constraints);
+}
+
+cameraList.onchange = () => {
+    if (cameraList.value) {
+        startCameraWithDevice(cameraList.value);
+    }
+};
+
+resolutionList.onchange = () => {
+    if (cameraList.value) {
+        startCameraWithDevice(cameraList.value);
+    }
+};
 
 // Request access to the user's webcam
 navigator.mediaDevices.getUserMedia({ video: true })
