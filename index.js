@@ -24,14 +24,26 @@ function getCameras() {
 function getResolutionConstraints() {
     const resolution = resolutionList.value;
     switch (resolution) {
+        case 'uhd':
+            return {
+                width: { ideal: 4096 },
+                aspectRatio: {
+                    ideal: 1.7777777778,
+                },
+            };
         case 'fullhd':
-            return { width: { ideal: 1920 }, height: { ideal: 1080 }};
+            return { width: { ideal: 1920 }, height: { ideal: 1080 } };
         case 'hd':
-            return { width: { ideal: 1280 }, height: { ideal: 720 }};
+            return { width: { ideal: 1280 }, height: { ideal: 720 } };
         case 'sd':
-            return { width: { ideal: 640 }, height: { ideal: 480 }};
+            return { width: { ideal: 640 }, height: { ideal: 480 } };
         default:
-            return { width: { ideal: 640 }, height: { ideal: 480 }};
+            return {
+                width: { ideal: 4096 },
+                aspectRatio: {
+                    ideal: 1.7777777778,
+                },
+            };
     }
 }
 
@@ -59,11 +71,10 @@ resolutionList.onchange = () => {
     }
 };
 
-// Request access to the user's webcam
-navigator.mediaDevices.getUserMedia({ video: true })
+navigator.mediaDevices.getUserMedia({ video: {...getResolutionConstraints()} })
     .then(stream => {
         videoElement.srcObject = stream;
-        window.stream = stream; // make stream available to browser console
+        window.stream = stream;
         getCameras();
     })
     .catch(error => {
@@ -89,25 +100,48 @@ function setupCamera () {
 }
 
 function startCamera(constraints) {
-    if (window.stream) {
-        window.stream.getTracks().forEach(track => {
-            track.stop();
-        });
-    }
+    if (window.stream && window.currentDeviceId === constraints.video.deviceId.exact) {
+        const videoTrack = window.stream.getVideoTracks()[0];
+        videoTrack.applyConstraints(constraints.video)
+            .then(() => {
+                updateStreamInfo();
+            })
+            .catch(error => {
+                console.error('Error applying constraints: ', error);
+                updateStreamInfo(error);
+            });
+    } else {
+        if (window.stream) {
+            window.stream.getTracks().forEach(track => track.stop());
+        }
 
-    navigator.mediaDevices.getUserMedia(constraints)
-        .then(stream => {
-            window.stream = stream;
-            videoElement.srcObject = stream;
-            videoElement.style.display = 'block';
-            videoElement.onloadedmetadata = () => {
-                resolutionDisplay.textContent = `Resolution: ${videoElement.videoWidth} x ${videoElement.videoHeight}`;
-                resolutionDisplay.style.display = 'block';
-            };
-        })
-        .catch(error => {
-            console.error('Error accessing media devices.', error);
-            resolutionDisplay.textContent = `Error: ${error.message}`;
-            resolutionDisplay.style.display = 'block';
-        });
+        navigator.mediaDevices.getUserMedia(constraints)
+            .then(stream => {
+                window.stream = stream;
+                window.currentDeviceId = constraints.video.deviceId.exact;
+                videoElement.srcObject = stream;
+                updateStreamInfo();
+            })
+            .catch(error => {
+                console.error('Error accessing media devices.', error);
+                updateStreamInfo(error);
+            });
+    }
+}
+
+function updateStreamInfo(error = null) {
+    if (error) {
+        resolutionDisplay.textContent = `Error: ${error.message}`;
+        resolutionDisplay.style.display = 'block';
+    } else {
+        updateVideoResolution()
+        videoElement.style.display = 'block';
+    }
+}
+
+function updateVideoResolution() {
+    setTimeout(() => {
+        resolutionDisplay.textContent = `Resolution: ${videoElement.videoWidth} x ${videoElement.videoHeight}`;
+        resolutionDisplay.style.display = 'block';
+    }, 500);
 }
